@@ -6,14 +6,18 @@ class MieTrak():
         self.document_group_table = TableManger("DocumentGroup")
         self.document_group_users_table = TableManger("DocumentGroupUsers")
 
-    def get_user_data(self):
+    def get_user_data(self, enabled=False):
         """Returns all the user data in the form of a dict with UserPK as Key and FirstName as Value
 
         Returns:
             dict = {"UserPK": "FirstName"}
         """
         user_dict = {}
-        user = self.user_table.get("UserPK", "FirstName")
+        if enabled:
+            user = self.user_table.get("UserPK", "FirstName", Enabled=1)
+        else:
+            user = self.user_table.get("UserPK", "FirstName")
+        
         if user:
             for x in user:
                 if x:
