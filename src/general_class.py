@@ -1,5 +1,5 @@
 from src.connection import get_connection
-from src.exceptions import  SchemaError
+from src.exceptions import SchemaError
 from src.schema import _get_schema, print_schema
 import pyodbc
 import logging
@@ -19,7 +19,9 @@ class TableManger:
         self.logger = logging.getLogger().getChild(f"GeneralAPI - {self.table_name}")
         self.schema = _get_schema(self.table_name)
         self.column_names = [name[0] for name in self.schema]
-        self.insert_not_allowed = [f"{self.table_name}PK", ]
+        self.insert_not_allowed = [
+            f"{self.table_name}PK",
+        ]
         self.insert_mandetory = []
 
         self.logger.info(f"init new. Table Name - {self.table_name}")
@@ -35,12 +37,16 @@ class TableManger:
         if insert:
             for val in self.insert_mandetory:
                 if val not in columns:
-                    raise SchemaError.mandetory_column_missing_error(val, self.table_name)   
+                    raise SchemaError.mandetory_column_missing_error(
+                        val, self.table_name
+                    )
 
     def insert(self, update_dict: dict):
         """update_dict: key-value pairs of column_names: values. These values will be checked against the schema before they go in the table"""
         self._column_check(update_dict.keys(), insert=True)
-        column_names, column_len = ", ".join([val for val in update_dict.keys()]), ", ".join(["?" for val in update_dict.keys()])
+        column_names, column_len = ", ".join(
+            [val for val in update_dict.keys()]
+        ), ", ".join(["?" for val in update_dict.keys()])
         values = [val for val in update_dict.values()]
         query = f"""INSERT INTO {self.table_name} ({column_names})
                     VALUES ({column_len})"""
@@ -51,18 +57,22 @@ class TableManger:
                 query = f"SELECT IDENT_CURRENT('{self.table_name}')"
                 cursor.execute(query)
                 return_pk = cursor.fetchone()[0]
-                self.logger.info(f"Inserted {self.table_name}. {self.table_name}PK: {return_pk}")
+                self.logger.info(
+                    f"Inserted {self.table_name}. {self.table_name}PK: {return_pk}"
+                )
                 conn.commit()
             return return_pk
         except pyodbc.Error as e:
-            self.logger.error(f"Inserted {self.table_name}. {self.table_name}PK: {return_pk} - {e}")
+            self.logger.error(
+                f"Inserted {self.table_name}. {self.table_name}PK: {return_pk} - {e}"
+            )
             print(e)
 
     def get(self, *args, **kwargs) -> list:
         """args: define what is returned as a tuple
-            kwargs: define what is passed as a parameter"""
+        kwargs: define what is passed as a parameter"""
         self._column_check(kwargs.keys())
-        return_param_string = ",".join(args) if args else "*" 
+        return_param_string = ",".join(args) if args else "*"
         query = f"SELECT {return_param_string} FROM {self.table_name}"
         parameters = []
         if kwargs:
@@ -84,7 +94,7 @@ class TableManger:
                     return result
                 else:
                     return None
-                    # raise ItemNotFoundError        
+                    # raise ItemNotFoundError
         except pyodbc.Error as e:
             self.logger.error(f"GET METHOD Query Built -> {query} -> ERROR {e}")
             print(e)
@@ -118,6 +128,7 @@ class TableManger:
                 conn.commit()
         except pyodbc.Error as e:
             print(e)
+
 
 if __name__ == "__main__":
     i_table = TableManger("Item")
