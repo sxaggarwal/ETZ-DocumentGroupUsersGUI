@@ -7,8 +7,9 @@ class DocGroupAccess(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Document Group User Access")
-        self.geometry("600x400")
+        self.geometry("920x600")
         self.database_conn = MieTrak()
+        self.user_pk = None
 
         self.user_data_dict = self.database_conn.get_user_data()
         self.user_names = list(self.user_data_dict.values())
@@ -25,49 +26,57 @@ class DocGroupAccess(tk.Tk):
         self.make_combobox()
 
     def make_combobox(self):
-        tk.Label(self, text="Select User: ").grid(row=0, column=0)
+        tk.Label(self, text="Select User: ").grid(row=1, column=1)
         self.user_combobox = ttk.Combobox(
             self, values=self.user_display_list, state="normal"
         )
-        self.user_combobox.grid(row=0, column=1)
+        self.user_combobox.grid(row=2, column=1)
         self.user_combobox.bind("<KeyRelease>", self.filter_combobox)
 
         self.enabled_user_var = tk.BooleanVar()
         self.enabled_user_checkbox = tk.Checkbutton(
             self,
-            text="Enabled Users",
+            text="Active Users Only",
             variable=self.enabled_user_var,
             command=self.filter_by_enabled_user,
         )
-        self.enabled_user_checkbox.grid(row=0, column=2)
+        self.enabled_user_checkbox.grid(row=0, column=1)
 
-        tk.Label(self, text="Select Document Group(s):").grid(row=1, column=0)
+        tk.Label(self, text="Select Document Group(s):").grid(row=6, column=0)
         self.document_group_listbox = tk.Listbox(
             self, height=10, width=50, exportselection=False, selectmode=tk.MULTIPLE
         )
         for group in self.document_groups:
             self.document_group_listbox.insert(tk.END, group)
-        self.document_group_listbox.grid(row=1, column=1)
+        self.document_group_listbox.grid(row=7, column=0)
 
-        tk.Label(self, text="Accessed Document Groups:").grid(row=2, column=0)
+        tk.Label(self, text="Accessed Document Groups:").grid(row=3, column=1)
         self.selected_user_info = tk.Listbox(
             self, height=10, width=50, exportselection=False, selectmode=tk.MULTIPLE
         )
-        self.selected_user_info.grid(row=2, column=1)
+        self.selected_user_info.grid(row=4, column=1)
         self.user_combobox.bind("<<ComboboxSelected>>", self.update_selected_user_info)
 
         give_access_button = tk.Button(
             self, text="GIVE ACCESS", command=self.give_access
         )
-        give_access_button.grid(row=3, column=0)
+        give_access_button.grid(row=8, column=1)
         remove_access_button = tk.Button(
             self, text="REMOVE ACCESS", command=self.confirm_delete_access
         )
-        remove_access_button.grid(row=3, column=1)
+        remove_access_button.grid(row=5, column=0)
         remove_all_access_button = tk.Button(
             self, text="REMOVE ALL ACCESS", command=self.confirm_remove_all_access
         )
-        remove_all_access_button.grid(row=3, column=2)
+        remove_all_access_button.grid(row=5, column=2)
+
+        tk.Label(self, text="Select Users to Give Access: ").grid(row=6, column=2)
+        self.multi_user_listbox = tk.Listbox(
+            self, height=10, width=50, exportselection=False, selectmode=tk.MULTIPLE
+        )
+        for user in self.user_display_list:
+            self.multi_user_listbox.insert(tk.END, user)
+        self.multi_user_listbox.grid(row=7, column=2)
 
     def filter_by_enabled_user(self):
         if self.enabled_user_var.get():
@@ -83,6 +92,9 @@ class DocGroupAccess(tk.Tk):
 
         self.user_combobox["values"] = self.user_display_list
         self.user_combobox.set("")  # Clear the current selection
+        self.multi_user_listbox.delete(0, tk.END)
+        for user in self.user_display_list:
+            self.multi_user_listbox.insert(tk.END, user)
 
     def filter_combobox(self, event):
         """Filter for selecting customers, type and search"""
@@ -109,9 +121,10 @@ class DocGroupAccess(tk.Tk):
 
     def give_access(self):
         selected_indices = self.document_group_listbox.curselection()
-        if not selected_indices:
+        selected_user_indices = self.multi_user_listbox.curselection()
+        if not selected_indices and selected_user_indices:
             messagebox.showwarning(
-                "No Selection", "Please select at least one document group."
+                "No Selection", "Please select at least one document group and User."
             )
             return
 
@@ -122,13 +135,19 @@ class DocGroupAccess(tk.Tk):
                 if value == selected_doc_group:
                     selected_doc_group_pk = key
                     break
-            if selected_doc_group_pk and self.user_pk:
-                self.database_conn.add_document_group_user(
-                    selected_doc_group_pk, self.user_pk
-                )
+            for ind in selected_user_indices:
+                selected_user = self.multi_user_listbox.get(ind)
+                # selected_user_pk = None
+                selected_user_pk = selected_user.split(" (UserPK: ")[1][:-1]
 
-        self.update_selected_user_info(None)
+                if selected_doc_group_pk and selected_user_pk:
+                    self.database_conn.add_document_group_user(
+                        selected_doc_group_pk, selected_user_pk
+                    )
+        if self.user_pk:
+            self.update_selected_user_info(None)
         self.document_group_listbox.selection_clear(0, tk.END)
+        self.multi_user_listbox.selection_clear(0, tk.END)
 
     def confirm_delete_access(self):
         selected_indices = self.selected_user_info.curselection()
