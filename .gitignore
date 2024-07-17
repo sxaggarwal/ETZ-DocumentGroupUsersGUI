@@ -2,3 +2,8 @@
 \logs
 test3.py
 \__pycache__
+\build
+\dist
+main.spec
+test2.py
+WorkSchedule.md
