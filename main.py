@@ -2,6 +2,48 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from src.mie_trak import MieTrak
 
+class LoginScreen(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Login Screen")
+        self.geometry("300x200")
+        self.database_conn = MieTrak()
+        # Create widgets
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Username label and entry
+        self.username_label = tk.Label(self, text="Username:")
+        self.username_label.pack(pady=5)
+        
+        self.username_entry = tk.Entry(self)
+        self.username_entry.pack(pady=5)
+
+        # Password label and entry
+        self.password_label = tk.Label(self, text="Password:")
+        self.password_label.pack(pady=5)
+        
+        self.password_entry = tk.Entry(self, show="*")
+        self.password_entry.pack(pady=5)
+
+        # Login button
+        self.login_button = tk.Button(self, text="Login", command=self.login_check)
+        self.login_button.pack(pady=10)
+
+    def login_check(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        
+        login_succes_or_not = self.database_conn.login_check(username, password)
+
+        if login_succes_or_not is True:
+            # messagebox.showinfo("Login", "Login successful!")
+            self.destroy()
+            doc_app = DocGroupAccess()
+            doc_app.mainloop()
+        else:
+            messagebox.showerror("Login", "Invalid credentials")
+
 
 class DocGroupAccess(tk.Tk):
     def __init__(self):
@@ -30,7 +72,114 @@ class DocGroupAccess(tk.Tk):
             ]
         self.document_group_dict = self.database_conn.get_document_groups()
         self.document_groups = list(self.document_group_dict.values())
-        self.make_combobox()
+        self.make_combobox1()
+
+    def make_combobox1(self):
+        button1 = tk.Button(self, text='Single User', command=self.open_single_user)
+        button1.grid(row=0, column=0)
+
+        button2 = tk.Button(self, text="Multiple User", command=self.open_multiple_user)
+        button2.grid(row=0, column=1)
+
+        button3 = tk.Button(self, text="Department", command=self.open_department)
+        button3.grid(row=0, column=2)
+
+        remove_non_active_users_access_button = tk.Button(self, text="Remove Non Active Access", command=self.database_conn.remove_access_non_active_user)
+        remove_non_active_users_access_button.grid(row=1, column=1)
+    
+    def open_single_user(self):
+        self.open_new_window("Single User")
+    
+    def open_multiple_user(self):
+        self.open_new_window("Multiple User")
+    
+    def open_department(self):
+        self.open_new_window("Department")
+
+    def open_new_window(self, title):
+        new_window = tk.Toplevel(self)
+        new_window.title(title)
+        new_window.geometry("500x500")
+
+        # # Create a label or any other widgets here
+        # label = tk.Label(new_window, text=f"This is {title}")
+        # label.pack(pady=20)
+
+        # # Create a back button
+        # back_button = tk.Button(new_window, text="Back", command=new_window.destroy)
+        # back_button.pack(pady=10) 
+        if title == "Single User":
+            tk.Label(new_window, text="Select User: ").grid(row=1, column=1)
+            self.user_combobox = ttk.Combobox(
+                new_window, values=self.user_display_list, state="normal"
+            )
+            self.user_combobox.grid(row=2, column=1)
+            self.user_combobox.bind("<KeyRelease>", self.filter_combobox)
+
+            self.enabled_user_var = tk.BooleanVar()
+            self.enabled_user_checkbox = tk.Checkbutton(
+                new_window,
+                text="Active Users Only",
+                variable=self.enabled_user_var,
+                command=self.filter_by_enabled_user,
+            )
+            self.enabled_user_checkbox.grid(row=0, column=1)
+            remove_access_button = tk.Button(
+                new_window, text="REMOVE ACCESS", command=self.confirm_delete_access
+            )
+            remove_access_button.grid(row=5, column=0)
+            remove_all_access_button = tk.Button(
+                new_window, text="REMOVE ALL ACCESS", command=self.confirm_remove_all_access
+            )
+            remove_all_access_button.grid(row=5, column=2)
+            tk.Label(new_window, text="Accessed Document Groups:").grid(row=3, column=1)
+            self.selected_user_info = tk.Listbox(
+                new_window, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
+            )
+            self.selected_user_info.grid(row=4, column=1)
+            self.user_combobox.bind("<<ComboboxSelected>>", self.update_selected_user_info)
+        elif title == "Multiple User":
+            tk.Label(new_window, text="Select Document Group(s):").grid(row=0, column=0)
+            self.document_group_listbox = tk.Listbox(
+                new_window, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
+            )
+            for group in self.document_groups:
+                self.document_group_listbox.insert(tk.END, group)
+            self.document_group_listbox.grid(row=1, column=0)
+            give_access_button = tk.Button(
+            new_window, text="GIVE ACCESS", command=self.give_access
+            )
+            give_access_button.grid(row=2, column=0)
+            tk.Label(new_window, text="Select Users to Give Access: ").grid(row=0, column=1)
+            self.multi_user_listbox = tk.Listbox(
+                new_window, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
+            )
+            for user in self.user_display_list:
+                self.multi_user_listbox.insert(tk.END, user)
+            self.multi_user_listbox.grid(row=1, column=1)
+        
+        elif title == "Department":
+            tk.Label(new_window, text="Select Department: ").grid(row=0,column=0)
+            self.department_combobox = ttk.Combobox(new_window, values=self.department_display_list, state="normal")
+            self.department_combobox.grid(row=1, column=0)
+
+            give_dept_access_button = tk.Button(new_window, text="Give Dept Access", command= lambda: self.give_or_remove_department_access("give"))
+            give_dept_access_button.grid(row=4, column=0)
+
+            remove_dept_access_button = tk.Button(new_window, text="Remove Dept Access", command=lambda: self.give_or_remove_department_access("remove"))
+            remove_dept_access_button.grid(row=4, column=1)
+
+            tk.Label(new_window, text="Select Document Group(s):").grid(row=2, column=0)
+            self.document_group_listbox = tk.Listbox(
+                new_window, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
+            )
+            for group in self.document_groups:
+                self.document_group_listbox.insert(tk.END, group)
+            self.document_group_listbox.grid(row=3, column=0)
+
+
+
+
 
     def make_combobox(self):
         tk.Label(self, text="Select User: ").grid(row=1, column=1)
@@ -242,10 +391,10 @@ class DocGroupAccess(tk.Tk):
             elif access == "remove":
                 self.database_conn.department_access("Remove", selected_department_pk, selected_doc_group_pk)
         
-        if self.user_pk:
-            self.update_selected_user_info(None)
+        # if self.user_pk:
+        #     self.update_selected_user_info(None)
         self.document_group_listbox.selection_clear(0, tk.END)
-        self.multi_user_listbox.selection_clear(0, tk.END)
+        # self.multi_user_listbox.selection_clear(0, tk.END)
 
     
     def maintain_all_department_access(self):
@@ -253,5 +402,5 @@ class DocGroupAccess(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = DocGroupAccess()
+    app = LoginScreen()
     app.mainloop()

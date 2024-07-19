@@ -120,5 +120,29 @@ class MieTrak:
                 else:
                     for pk in department_doc_groups[departmentfk].values():
                         self.add_document_group_user(pk, user_pk)
+    
+    def get_user_credentials(self):
+        """Returns the user credentials in the form of a dict"""
+        user_credentials = {}
+        users = self.user_table.get("Code", "Password")
+        if users:
+            for x in users:
+                if x:
+                    user_credentials[x[0]] = x[1]
+        return user_credentials
+    
+    def login_check(self, code, password):
+        """Checks if the user credentials are correct"""
+        user_credentials = self.get_user_credentials()
+        accessable_user = ['32028', '60009', '10000', '31078']
+        if code in accessable_user:
+            if user_credentials[code] == password:
+                return True
+            else:
+                return False
+        else:
+            return False
+                
+
 
 
