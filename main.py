@@ -51,7 +51,7 @@ class DocGroupAccess(tk.Tk):
 
         tk.Label(self, text="Select Document Group(s):").grid(row=6, column=0)
         self.document_group_listbox = tk.Listbox(
-            self, height=10, width=50, exportselection=False, selectmode=tk.MULTIPLE
+            self, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
         )
         for group in self.document_groups:
             self.document_group_listbox.insert(tk.END, group)
@@ -59,7 +59,7 @@ class DocGroupAccess(tk.Tk):
 
         tk.Label(self, text="Accessed Document Groups:").grid(row=3, column=1)
         self.selected_user_info = tk.Listbox(
-            self, height=10, width=50, exportselection=False, selectmode=tk.MULTIPLE
+            self, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
         )
         self.selected_user_info.grid(row=4, column=1)
         self.user_combobox.bind("<<ComboboxSelected>>", self.update_selected_user_info)
@@ -79,7 +79,7 @@ class DocGroupAccess(tk.Tk):
 
         tk.Label(self, text="Select Users to Give Access: ").grid(row=6, column=2)
         self.multi_user_listbox = tk.Listbox(
-            self, height=10, width=50, exportselection=False, selectmode=tk.MULTIPLE
+            self, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
         )
         for user in self.user_display_list:
             self.multi_user_listbox.insert(tk.END, user)
