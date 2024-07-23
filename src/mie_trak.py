@@ -44,9 +44,10 @@ class MieTrak:
                     document_group_dict[x[0]] = x[1]
         return document_group_dict
 
-    def get_accesed_document_group(self, user_pk, document_group_dict):
+    def get_accesed_document_group(self, user_pk, document_group_dict, x=False):
         """Returns all the document Group that the user has access to in the form of a dict"""
         doc_user_group_dict = {}
+        doc_user_group_dict_new = {}
         document_group_pk = self.document_group_users_table.get(
             "DocumentGroupUsersPK", "DocumentGroupFK", UserFK=user_pk
         )
@@ -54,7 +55,11 @@ class MieTrak:
             for pk in document_group_pk:
                 if pk:
                     doc_user_group_dict[pk[0]] = document_group_dict[pk[1]]
-            return doc_user_group_dict
+                    doc_user_group_dict_new[pk[0]] = pk[1]
+            if x:
+                return doc_user_group_dict_new
+            else:
+                return doc_user_group_dict
 
     def delete_document_group_user(self, document_group_users_pk):
         """Deletes the entry for a selected PK from DocumentGroupUsers Table"""
@@ -90,7 +95,6 @@ class MieTrak:
     
     def department_access(self, access, departmentfk, document_group_fk):
         user = self.get_user_data(departmentfk=departmentfk)
-        print(user)
         if access=="Give":
             for user_pk in user.keys():
                 self.add_document_group_user(document_group_fk, user_pk)
@@ -101,25 +105,32 @@ class MieTrak:
                     for pk in document_group_users_pk:
                         self.delete_document_group_user(pk[0])
 
-    def maintain_department_access(self):
+    def maintain_department_access(self, department_doc_groups):
         """Maintains the access of the users to the documents based on the department they belong to"""
-        department_doc_groups = {
+        # department_doc_groups = {
 
-        }
+        # }
+
         document_group_dict = self.get_document_groups()
         department_dict = self.get_department()
         for departmentfk in department_dict.keys():
 
             user = self.get_user_data(departmentfk=departmentfk)
             for user_pk in user.keys():
-                doc_user_group_dict = self.get_accesed_document_group(user_pk, document_group_dict) 
-                if doc_user_group_dict:
-                    for doc_group_pk in doc_user_group_dict.keys():
-                        if doc_group_pk not in department_doc_groups[departmentfk].values():
+                doc_user_group_dict = self.get_accesed_document_group(user_pk, document_group_dict, x=True) 
+                # if doc_user_group_dict:
+                #     print(doc_user_group_dict)
+
+                for doc_group_pk in department_doc_groups[str(departmentfk)]:
+                    if doc_user_group_dict:
+
+                        if doc_group_pk not in doc_user_group_dict.values():
                             self.add_document_group_user(doc_group_pk, user_pk)
-                else:
-                    for pk in department_doc_groups[departmentfk].values():
-                        self.add_document_group_user(pk, user_pk)
+                    else:
+                        self.add_document_group_user(doc_group_pk, user_pk)
+            # else:
+                #     for pk in department_doc_groups[departmentfk].values():
+                #         self.add_document_group_user(pk, user_pk)
     
     def get_user_credentials(self):
         """Returns the user credentials in the form of a dict"""
@@ -142,6 +153,12 @@ class MieTrak:
                 return False
         else:
             return False
+        
+    def get_department_user(self, departmentfk):
+        """Returns the users of a department in the form of a dict"""
+        user = self.get_user_data(departmentfk=departmentfk)
+        return user
+
                 
 
 
