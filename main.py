@@ -26,12 +26,13 @@ class LoginScreen(tk.Tk):
         
         self.password_entry = tk.Entry(self, show="*")
         self.password_entry.pack(pady=5)
+        self.password_entry.bind("<Return>", self.login_check)
 
         # Login button
         self.login_button = tk.Button(self, text="Login", command=self.login_check)
         self.login_button.pack(pady=10)
 
-    def login_check(self):
+    def login_check(self, event=None):
         username = self.username_entry.get()
         password = self.password_entry.get()
         
@@ -50,7 +51,7 @@ class DocGroupAccess(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Document Group User Access")
-        self.geometry("920x600")
+        self.geometry("350x150")
         self.database_conn = MieTrak()
         self.user_pk = None
 
@@ -87,6 +88,9 @@ class DocGroupAccess(tk.Tk):
 
         remove_non_active_users_access_button = tk.Button(self, text="Remove Non Active Access", command=self.database_conn.remove_access_non_active_user)
         remove_non_active_users_access_button.grid(row=1, column=1)
+
+        maintain_dept_access_button = tk.Button(self, text="Maintain Dept Access", command= self.maintain_all_department_access)
+        maintain_dept_access_button.grid(row=2, column=1)
     
     def open_single_user(self):
         self.open_new_window("Single User")
@@ -151,14 +155,14 @@ class DocGroupAccess(tk.Tk):
             give_access_button = tk.Button(
             new_window, text="GIVE ACCESS", command=self.give_access
             )
-            give_access_button.grid(row=2, column=0)
-            tk.Label(new_window, text="Select Users to Give Access: ").grid(row=0, column=1)
+            give_access_button.grid(row=2, column=1)
+            tk.Label(new_window, text="Select Users to Give Access: ").grid(row=0, column=2)
             self.multi_user_listbox = tk.Listbox(
                 new_window, height=10, width=50, exportselection=False, selectmode=tk.EXTENDED
             )
             for user in self.user_display_list:
                 self.multi_user_listbox.insert(tk.END, user)
-            self.multi_user_listbox.grid(row=1, column=1)
+            self.multi_user_listbox.grid(row=1, column=2)
         
         elif title == "Department":
             tk.Label(new_window, text="Select Department: ").grid(row=0,column=1)
@@ -234,12 +238,12 @@ class DocGroupAccess(tk.Tk):
     def update_selected_user_info(self, event):
         selected_user_display = self.user_combobox.get()
         user_first_name = selected_user_display.split(" ")[0]
-        user_last_name = selected_user_display.split(" ")[1]
+        user_last_name = selected_user_display.split(" ")[-1]
         # for first_name in self.user_data_dict.values():
         #     if first_name[0] == user_first_name:
         #         self.selected_user_pk = self.user_data_dict[first_name]
         for key, value in self.user_data_dict.items():
-            if value[0] == user_first_name and value[1] == user_last_name:
+            if user_first_name in value[0] and user_last_name in value[1]:
                 self.user_pk = key
         # self.user_pk = selected_user_display.split(" (UserPK: ")[1][:-1]
         self.doc_user_group_dict = self.database_conn.get_accesed_document_group(
@@ -285,10 +289,11 @@ class DocGroupAccess(tk.Tk):
                     self.database_conn.add_document_group_user(
                         selected_doc_group_pk, selected_user_pk
                     )
-        if self.user_pk:
-            self.update_selected_user_info(None)
+        # if self.user_pk:
+        #     self.update_selected_user_info(None)
         self.document_group_listbox.selection_clear(0, tk.END)
         self.multi_user_listbox.selection_clear(0, tk.END)
+        messagebox.showinfo("Done", "Access Given")
 
     def confirm_delete_access(self):
         selected_indices = self.selected_user_info.curselection()
@@ -308,6 +313,7 @@ class DocGroupAccess(tk.Tk):
             selected_doc_group_pk = selected_doc_group.split(":")[0]
             self.database_conn.delete_document_group_user(selected_doc_group_pk)
         self.update_selected_user_info(None)
+        messagebox.showinfo("Done", "Access Removed")
 
     def confirm_remove_all_access(self):
         if not self.doc_user_group_dict:
@@ -323,6 +329,7 @@ class DocGroupAccess(tk.Tk):
         for pk, group in self.doc_user_group_dict.items():
             self.database_conn.delete_document_group_user(pk)
         self.update_selected_user_info(None)
+        messagebox.showinfo("Done", "All Access Removed")
     
     def give_or_remove_department_access(self, access):
         selected_indices = self.document_group_listbox.curselection()
@@ -352,6 +359,7 @@ class DocGroupAccess(tk.Tk):
     def maintain_all_department_access(self):
         department_doc_group = self.load_dict()
         self.database_conn.maintain_department_access(department_doc_group)
+        messagebox.showinfo("Done", "Access given to all the Users according to their Department")
 
     def display_accessable_document_groups(self, event=None):
         self.department_user_listbox.delete(0, tk.END)
@@ -395,6 +403,11 @@ class DocGroupAccess(tk.Tk):
                         self.add_value(str(selected_department_pk), selected_doc_group_pk)
                     elif access == 'remove':
                         self.remove_value(str(selected_department_pk), selected_doc_group_pk)
+        
+        if access == 'add':
+            messagebox.showinfo("Done", "Doc Groups added")
+        elif access == 'remove':
+            messagebox.showinfo("Done", "Doc Groups removed")
     
     def load_dict(self):
         try:

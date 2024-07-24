@@ -1,4 +1,5 @@
 from src.general_class import TableManger
+from tkinter import messagebox
 
 
 class MieTrak:
@@ -82,6 +83,7 @@ class MieTrak:
             if doc_user_group_dict:
                 for doc_group_pk in doc_user_group_dict.keys():
                     self.delete_document_group_user(doc_group_pk) 
+        messagebox.showinfo("Done", "All Non Active Users Removed")
 
     def get_department(self):
         """Returns all the Department data in the form of a dict with DepartmentPK as Key and Name as value"""
