@@ -39,10 +39,6 @@ class LoginScreen(tk.Tk):
 
         login_succes_or_not = self.database_conn.login_check(username, password)
 
-        # TODO: DELETE THIS
-        login_succes_or_not = True
-        # TODO: DELETE THIS
-
         if login_succes_or_not is True:
             # messagebox.showinfo("Login", "Login successful!")
             self.destroy()

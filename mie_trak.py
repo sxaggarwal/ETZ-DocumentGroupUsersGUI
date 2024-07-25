@@ -19,16 +19,18 @@ class MieTrak:
         if enabled:
             user = self.user_table.get("UserPK", "FirstName", "LastName", Enabled=1)
         elif not_active:
-            user = self.user_table.get("UserPK", "FirstName", "LastName",Enabled=0)
+            user = self.user_table.get("UserPK", "FirstName", "LastName", Enabled=0)
         elif departmentfk:
-            user = self.user_table.get("UserPK", "FirstName", "LastName",DepartmentFK=departmentfk, Enabled=1)
+            user = self.user_table.get(
+                "UserPK", "FirstName", "LastName", DepartmentFK=departmentfk, Enabled=1
+            )
         else:
             user = self.user_table.get("UserPK", "FirstName", "LastName")
 
         if user:
             for x in user:
                 if x:
-                    user_dict[x[0]] = [x[1],x[2]]
+                    user_dict[x[0]] = [x[1], x[2]]
         return user_dict
 
     def get_document_groups(self):
@@ -68,21 +70,25 @@ class MieTrak:
 
     def add_document_group_user(self, doc_group_pk, user_fk):
         """Adds a new entry to the DocumentGroupUsers table"""
-        pk = self.document_group_users_table.get("DocumentGroupUsersPK", UserFK=user_fk, DocumentGroupFK=doc_group_pk)
+        pk = self.document_group_users_table.get(
+            "DocumentGroupUsersPK", UserFK=user_fk, DocumentGroupFK=doc_group_pk
+        )
         if not pk:
             info_dict = {"DocumentGroupFK": doc_group_pk, "UserFK": user_fk}
             pk = self.document_group_users_table.insert(info_dict)
         return pk
-    
+
     def remove_access_non_active_user(self):
         """Removes access to all non active users"""
         non_active_user_dict = self.get_user_data(not_active=True)
         doc_group_dict = self.get_document_groups()
         for user_pk in non_active_user_dict.keys():
-            doc_user_group_dict = self.get_accesed_document_group(user_pk, doc_group_dict)
+            doc_user_group_dict = self.get_accesed_document_group(
+                user_pk, doc_group_dict
+            )
             if doc_user_group_dict:
                 for doc_group_pk in doc_user_group_dict.keys():
-                    self.delete_document_group_user(doc_group_pk) 
+                    self.delete_document_group_user(doc_group_pk)
         messagebox.showinfo("Done", "All Non Active Users Removed")
 
     def get_department(self):
@@ -94,15 +100,19 @@ class MieTrak:
                 if x:
                     department_dict[x[0]] = x[1]
         return department_dict
-    
+
     def department_access(self, access, departmentfk, document_group_fk):
         user = self.get_user_data(departmentfk=departmentfk)
-        if access=="Give":
+        if access == "Give":
             for user_pk in user.keys():
                 self.add_document_group_user(document_group_fk, user_pk)
-        elif access=="Remove":
+        elif access == "Remove":
             for user_pk1 in user.keys():
-                document_group_users_pk = self.document_group_users_table.get("DocumentGroupUsersPK", DocumentGroupFK=document_group_fk, UserFK=user_pk1)
+                document_group_users_pk = self.document_group_users_table.get(
+                    "DocumentGroupUsersPK",
+                    DocumentGroupFK=document_group_fk,
+                    UserFK=user_pk1,
+                )
                 if document_group_users_pk:
                     for pk in document_group_users_pk:
                         self.delete_document_group_user(pk[0])
@@ -119,7 +129,9 @@ class MieTrak:
 
             user = self.get_user_data(departmentfk=departmentfk)
             for user_pk in user.keys():
-                doc_user_group_dict = self.get_accesed_document_group(user_pk, document_group_dict, x=True) 
+                doc_user_group_dict = self.get_accesed_document_group(
+                    user_pk, document_group_dict, x=True
+                )
                 # if doc_user_group_dict:
                 #     print(doc_user_group_dict)
 
@@ -131,9 +143,9 @@ class MieTrak:
                     else:
                         self.add_document_group_user(doc_group_pk, user_pk)
             # else:
-                #     for pk in department_doc_groups[departmentfk].values():
-                #         self.add_document_group_user(pk, user_pk)
-    
+            #     for pk in department_doc_groups[departmentfk].values():
+            #         self.add_document_group_user(pk, user_pk)
+
     def get_user_credentials(self):
         """Returns the user credentials in the form of a dict"""
         user_credentials = {}
@@ -143,11 +155,11 @@ class MieTrak:
                 if x:
                     user_credentials[x[0]] = x[1]
         return user_credentials
-    
+
     def login_check(self, code, password):
         """Checks if the user credentials are correct"""
         user_credentials = self.get_user_credentials()
-        accessable_user = ['32028', '60009', '10000', '31078']
+        accessable_user = ["32028", "60009", "10000", "31078"]
         if code in accessable_user:
             if user_credentials[code] == password:
                 return True
@@ -155,13 +167,8 @@ class MieTrak:
                 return False
         else:
             return False
-        
+
     def get_department_user(self, departmentfk):
         """Returns the users of a department in the form of a dict"""
         user = self.get_user_data(departmentfk=departmentfk)
         return user
-
-                
-
-
-
