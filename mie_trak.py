@@ -1,4 +1,4 @@
-from src.general_class import TableManger
+from mtapi.general_class import TableManger
 from tkinter import messagebox
 
 
