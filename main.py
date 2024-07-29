@@ -171,7 +171,7 @@ class DocGroupAccess(tk.Tk):
             )
             self.user_combobox = ttk.Combobox(
                 new_window,
-                values=self.user_display_list,
+                values=sorted(self.user_display_list),
                 state="normal",
                 font=self.button_font,
             )
@@ -243,7 +243,7 @@ class DocGroupAccess(tk.Tk):
                 exportselection=False,
                 selectmode=tk.EXTENDED,
             )
-            for group in self.document_groups:
+            for group in sorted(self.document_groups):
                 self.document_group_listbox.insert(tk.END, group)
             self.document_group_listbox.grid(
                 row=1, column=0, rowspan=3, columnspan=2, sticky="NSEW", padx=5, pady=5
@@ -258,7 +258,7 @@ class DocGroupAccess(tk.Tk):
                 exportselection=False,
                 selectmode=tk.EXTENDED,
             )
-            for user in self.user_display_list:
+            for user in sorted(self.user_display_list):
                 self.multi_user_listbox.insert(tk.END, user)
             self.multi_user_listbox.grid(
                 row=1, column=2, rowspan=3, columnspan=2, sticky="NSEW", padx=5, pady=5
@@ -284,11 +284,12 @@ class DocGroupAccess(tk.Tk):
                 new_window, text="Select Department: ", font=self.heading_font
             ).grid(row=0, column=0, columnspan=6, padx=5, pady=5, sticky="NSEW")
             self.department_combobox = ttk.Combobox(
-                new_window, values=self.department_display_list, state="normal"
+                new_window, values=sorted(self.department_display_list), state="normal"
             )
             self.department_combobox.grid(
                 row=1, column=0, columnspan=6, padx=5, pady=5, sticky="SN"
             )
+            self.department_combobox.bind("<KeyRelease>", self.filter_dept_combobox)
 
             self.department_combobox.bind(
                 "<<ComboboxSelected>>", self.display_accessable_document_groups
@@ -310,7 +311,7 @@ class DocGroupAccess(tk.Tk):
                 exportselection=False,
                 selectmode=tk.EXTENDED,
             )
-            for group in self.document_groups:
+            for group in sorted(self.document_groups):
                 self.document_group_listbox.insert(tk.END, group)
             self.document_group_listbox.grid(
                 row=3, column=2, columnspan=2, rowspan=3, padx=5, pady=5, sticky="NSEW"
@@ -408,12 +409,23 @@ class DocGroupAccess(tk.Tk):
             for name in self.current_user_display_list
             if name.lower().startswith(current_text)
         ]
-        self.user_combobox["values"] = filtered_values
+        self.user_combobox["values"] = sorted(filtered_values)
+    
+    def filter_dept_combobox(self, event):
+        current_text = self.department_combobox.get().lower()
+        filtered_values = [
+            department
+            for department in self.department_display_list
+            if department.lower().startswith(current_text)
+            
+        ]
+        self.department_combobox["values"] = sorted(filtered_values)
 
     def update_selected_user_info(self, event):
         selected_user_display = self.user_combobox.get()
         user_first_name = selected_user_display.split(" ")[0]
         user_last_name = selected_user_display.split(" ")[-1]
+        group_list = []
         # for first_name in self.user_data_dict.values():
         #     if first_name[0] == user_first_name:
         #         self.selected_user_pk = self.user_data_dict[first_name]
@@ -428,8 +440,12 @@ class DocGroupAccess(tk.Tk):
         self.selected_user_info.delete(0, tk.END)
 
         if self.doc_user_group_dict:
-            for pk, group in self.doc_user_group_dict.items():
-                self.selected_user_info.insert(tk.END, f"{pk}: {group}")
+            for group in self.doc_user_group_dict.values():
+                group_list.append(group)
+            sorted_group_list = sorted(group_list)  # Sort items alphabetically
+            for sorted_group in sorted_group_list:
+                self.selected_user_info.insert(tk.END, sorted_group)
+                # self.selected_user_info.insert(tk.END, f"{group}")
 
     def give_access(self):
         selected_indices = self.document_group_listbox.curselection()
@@ -485,8 +501,11 @@ class DocGroupAccess(tk.Tk):
         selected_indices = self.selected_user_info.curselection()
         for index in selected_indices:
             selected_doc_group = self.selected_user_info.get(index)
-            selected_doc_group_pk = selected_doc_group.split(":")[0]
-            self.database_conn.delete_document_group_user(selected_doc_group_pk)
+            for k, v in self.doc_user_group_dict.items():
+                if v == selected_doc_group:
+                    selected_doc_group_pk = k
+            # selected_doc_group_pk = selected_doc_group.split(":")[0]
+                    self.database_conn.delete_document_group_user(selected_doc_group_pk)
         self.update_selected_user_info(None)
         messagebox.showinfo("Done", "Access Removed")
 
@@ -546,18 +565,24 @@ class DocGroupAccess(tk.Tk):
         self.department_doc_group_listbox.delete(0, tk.END)
         department_doc_group_dict = self.load_dict()
         selected_department = self.department_combobox.get()
+        department_user_list = []
+        department_doc_group_list = []
         for key, value in self.department_dict.items():
             if value == selected_department:
                 selected_department_pk = key
         department_user = self.database_conn.get_department_user(selected_department_pk)
         for key2, value2 in department_user.items():
-            self.department_user_listbox.insert(tk.END, value2[0] + " " + value2[1])
+            department_user_list.append(value2[0] + " " + value2[1])
+        for user in sorted(department_user_list):
+            self.department_user_listbox.insert(tk.END, user)
         for k, v in department_doc_group_dict.items():
             if int(k) == selected_department_pk:
                 for doc_group_pk in v:
                     for key1, value1 in self.document_group_dict.items():
                         if key1 == doc_group_pk:
-                            self.department_doc_group_listbox.insert(tk.END, value1)
+                            department_doc_group_list.append(value1)
+        for department_doc_group in sorted(department_doc_group_list):    
+            self.department_doc_group_listbox.insert(tk.END, department_doc_group)
         # selected_indices = self.document_group_listbox.curselection()
         # for index in selected_indices:
         #     selected_doc_group = self.document_group_listbox.get(index)
@@ -638,6 +663,6 @@ class DocGroupAccess(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = LoginScreen()
-    # app = DocGroupAccess()
+    # app = LoginScreen()
+    app = DocGroupAccess()
     app.mainloop()
